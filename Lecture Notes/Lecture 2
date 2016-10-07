@@ -1,0 +1,177 @@
+---------
+Functions
+---------
+-Definining function is done by using "defun"
+
+(defun square (x) 
+	(* x x))
+
+(square 3)
+9
+
+-Obtaining absolute value of a number
+
+(defun abs (x)
+	(cond ((< x 0) (-x))
+	(t x)))
+
+-------------------
+Simple Numeric Args
+-------------------
+
+(listp )
+(atom )
+(null )
+(equal )
+
+-Write a function to check if a number is odd
+(defun odd (x)
+	(cond ((= x 0) nil))
+		  ((= x 1) t)
+		  (t (odd (-x 2))) )
+
+-Write a function to raise a number B to power P
+B^P
+
+(defun exp (B p)
+	(cond ((= p 0) 1)
+		(t (* B (exp B (- p 1)) )) ))
+
+-We can do this in log time with recursion
+B^p 	-1 				p=0
+		-B*B^(p-1) 		if p=odd
+		-[B^(p/2)]^2 	if p=even
+
+(defun exp (B p)
+	(cond ((= p 0) 1)
+	((oddp p) (* B (exp B (- p 1))))
+	(t (* (exp B (/ p 2)) (exp B (/ p 2))) )
+	)
+)
+
+-> This is still inefficient because we are making two calls to exp. This could be solved with a local variable or use the square function:
+
+(defun exp (B p)
+	(cond ((= p 0) 1)
+	((oddp p) (* B (exp B (- p 1))))
+	(t (square (exp B (/p 2)) ))
+	)
+)
+
+--------------
+List Arguments
+--------------
+EX: We want to sum a list
+
+(defun sum_list (L)
+	(cond ((null L) 0) 
+	(t (+ (first(L)) (sum_list(rest L))) )
+	)
+)
+
+((listp (first L))
+	(+ (sum_list(first L)) (sum_list(rest L)))
+	
+)
+
+-------------------------------------
+EX: We want to find if a list contains a query. This is a "member" function.
+
+'a '(a b c)		yes
+'(1) '(3 1 7)	yes
+
+(defun member (x L) 
+	(cond ((null L) nil)
+	((equal car(L) x) t)
+	(t (member(x cdr(L))) )
+	)
+)
+
+note: The equal sign "=" can only work with numbers. The "equal" function can work with any type of object.
+
+
+-------------------------------------
+EX: We want to get the last element of the list
+
+(defun last (L)
+	(cond ((null L)) nil)
+	((null (rest L)) first(L))
+	(t last(rest(L)))
+)
+
+
+-------------------------------------
+EX: Find the nth element of a list, starting from index n=0
+
+(defun nth (n L)
+	(cond ((null L) nil)
+		((= n 0) (first L))
+		(t (nth (- n 1) (rest L)))
+	)
+)
+
+
+-------------------------------------
+EX: Remove a value "x" from L. 
+-This is not a deep remove. We're just removing x from the first level.
+-We will only remove the first occurrence of the letter.
+
+(remove 'a (b c a d))
+(b c d)
+
+(remove 'a ((a) b c)
+((a) b c)
+
+(defun remove (x L)
+	(cond ((null L) nil)
+	((equal (first L) x) (rest L))
+	(t (cons (first L) (remove x (rest L))) )
+	)
+)
+
+-We can have it remove all occurrences of the letter:
+
+(defun remove (x L)
+	(cond ((null L) nil)
+	((equal (first L) x) (remove x (reswt L)))
+	(t (cons (first L) (remove x (rest L))) )
+	)
+)
+
+
+-------------------------------------
+EX: Append a value to the list.
+
+(a) (1 2)
+(a 1 2)
+
+nil (a b)
+(a b)
+
+(1 2) nil
+(1 2)
+
+(defun append (L1 L2)
+	(cond ((null L1)) L2)
+	(t (cons(first(L1) (append rest(L1) L2)))) 
+)
+
+
+-------------------------------------
+EX: Reverse a list.
+
+(defun reverse (L)
+	(cond  ((null L)) nil)
+	(append reverse(rest L) (list(first(L)))
+)
+
+--------------
+Let Expression
+--------------
+
+(let ((x 3) (y (+ x 2))) )
+(* x y)
+15
+
+-You can put as many bindings as you want in the let expression
+

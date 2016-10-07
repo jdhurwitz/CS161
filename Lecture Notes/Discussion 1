@@ -1,0 +1,102 @@
+CS161
+Discussion 1
+9/30/16
+
+To load your hw assignment, use (load "hw1.lsp")
+
+EX1: Check if L2 is a subsequence of L1
+(subseq '(a b a c) '(a c))	-> T
+(subseq '(a b a c) '()) 	-> T
+
+(defun subseq (L1 L2)
+	(cond ((null L2) t) 
+			((null L1) nil)
+			(equal (car L1) (car L2) (subseq (cdr L1) (cdr L2)))
+			(subseq (cdr L1) L2)
+	)
+)
+
+We can do the following substitution:
+
+car -> first
+cdr -> rest
+
+
+EX2: Check if L2 is a substring of L1
+
+EX3: Replace all occurrences of x with y in list L.
+
+'a 'b '(c b a b a)
+	  '(c b b b b)
+
+(defun replace (x y L)
+	(cond ((null L)) nil)
+		((equal (car L) x) (cons y replace(x y cdr L)))
+		(t (cons (car L) replace(x y L)))
+	)
+)
+
+EX4: Return true if x appears an even number of times
+
+'a '(a b a a c) -> nil
+'a '()			-> t
+'a '(b a a)		-> t
+
+(defun even (x L)
+	(cond ((null L) t)
+	((equal x (car L)) not( even(x (cdr L))) )
+	(t (even(x (cdr L))))
+	)
+)
+
+EX5: Return true if a list is a palindrome.
+
+(defun palindrome (L)
+	(cond ((null L) t)
+	((equal (first L) (car (last L))) palindrome(sublist(L 1 (- (length L) 2))))
+	(t nil)
+	)
+)
+
+
+EX6:
+
+-An ordered tree is defined as followed for the following arguments (L m R)
+	-m is a number
+	-L and R are ordered trees
+	-everything in L is < m
+	-everything in R is >= m
+
+(1 2 3) is an ordered tree because the middle (2) is a number, the left is less, and the right is more.
+
+((1 2 3) 4 (5 6)) is also an ordered tree.
+
+-We want to do a postorder traversal
+	-Check if current node is null
+	-Call postorder on the left subtree
+	-Call postorder on the right subtree
+	-Display the data of the node
+
+(defun postorder (T)
+	(cond((numberp T) (cons T nil))
+	(t (append(postorder (car T)
+				(postorder (last T))
+				(list(second T))))) 
+
+
+	)
+)
+
+EX7: Lowest common ancestor.
+	-n and m are integers, and one is not necessarily greater or less than the other. They can be anything.
+
+((1 2 3) 4 (5 6 7))
+
+
+(defun LCA (n m T)
+	((cond ((numberp T) T))
+	(and (< n (second T)) (< m (second T)) (LCA (first T)))
+	(and (> n (second T)) (< m (second T)) (last T))
+	(t (second T))
+	)
+)

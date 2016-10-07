@@ -1,0 +1,123 @@
+---------
+Lecture 3
+---------
+
+MIDTERM QUESTION: Formulate something as a search given a problem.
+
+(setq x 5)
+5
+
+(t (let ((x 3)) 
+	(+ x (* x 10))) x)
+
+38
+
+(setq x 2)
+2
+
+(let ((x 3)
+	  (y (+x 2)))
+	(* x y))
+12
+
+	-> This will be evaluated in parallel
+	-> If you change the "let" to be a "let*" then it will be evaluated sequentially. The answer will be 15.
+
+
+--------------------------
+Problem Solving and Search
+--------------------------
+-We will build a search engine.
+
+(problem) 	->	 [search problem]   	 ->	[Search Engine]		-> Solution
+			    1) formal components		1) Systematic 
+			    							2) Heuristic 
+
+-Heuristic search algorithms require more input from the user. They require a heuristic. They are generally more effective than the systematic approach.
+
+EX1: Re-arranging a Grid
+
+[5 4 ()]					[1 2  3]
+[6 1 8 ] - we want this -> 	[8 () 4]
+[7 3 2 ]					[7 6  5]
+
+-We want to achieve the grid on the right while minimizing the total amount of moves.
+-We can do an exhaustive search but trying both 4 and 8 in the open slot. THen these two possibilities each have three possibilities. 
+	-> It's interesting to note that we create the initial state again after doing this. This means that some of the paths are infinite (repeated state.)
+	-> We want to find the path to the solution without storing the entire search in memory
+
+note: The 15 size puzzle of this problem has states on the order of trillion.
+
+-The formal components of the search problem (for the systematic search):
+	1) Init state
+	2) Actions/rules
+	3) Desired solution state
+
+
+Branching Factor: number of children that a node may have in total
+	-The complexity of some algorithms is expressed in terms of the branching factor
+
+
+------------
+EX2: Missionaries and Cannibals Problem
+
+| | xxx				->  		xxx	| | 
+| | ooo  						ooo	| | 
+
+-The boat may take at most two individuals 
+-Cannot have more cannibals than missionaries on any side of the river at any point
+-We need to send someone back on the boat, which makes it non-trivial. 
+
+The set of actions:
+x
+xx
+xo
+o
+00
+
+(a b c)
+
+a: number of missionaries at boat's side
+b: number of cannibals at boat's side
+c
+	-t: 	boat on right
+	-nil: 	boat on left
+
+Initial state: (3 3 t)
+Final state:   (3 3 nil)
+
+	-> this information will be used by the engine to create the search tree
+
+-We can provide a "successor function", where you pass it a state and then it provides a set of children:
+
+(succ-fun (3 3 t))
+((1 1 nil) (0 2 nil) (0 1 nil))
+
+	-> This successor function is an abstraction that encapsulates our knowledge about how to formulate the tree. A distinction must be made as it does not search the tree itself.
+
+
+
+------------
+EX3: N-Queens Problem
+-For this problem we will only look at 8 queens.
+-The task is to place 8 queens such that none of them may attack the other
+
+-We can figure out if a final state is valid but we cannot find the specific final state to pass to the function to search for. The philosophy should then be create a set of rules under which a solution is valid. (input: state -> output: yes or no)
+	-Check to see if any queen is attacking any other
+
+-We place a queen on the board. This board has 64 children.
+-Each child of that node will have 63 children (because now there are two queens placed)
+
+-> We know that this tree is finite depth.
+-> We know that the solution will lie on level 8.
+
+
+------------
+EX4: Find a mapping that generates a numeric version of letters
+
+FORTY	29786
+  TEN  	  850
++ TEN     850
+-----   -----
+SIXTY   31486
+

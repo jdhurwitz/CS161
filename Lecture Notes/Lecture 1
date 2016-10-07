@@ -1,0 +1,135 @@
+(+1 3)
+4
+
+(+(*2 3) 1)
+7
+
+-Expressions are evaluated from left to right
+
+(op a1 a2 ... an)
+-The function may be user defined or built-in 
+
+(setq x 3)
+3
+
+(+ x 2)
+5
+
+(+ x y)
+	-This would cause an error since y has not been declared yet
+
+----------
+Lisp Lists
+----------
+1) Empty list () = NIL
+2) (.......)
+
+-A lisp expression is either an atom or a list
+
+-----------------
+List Manipulation 
+-----------------
+-access
+	car: gives you the head of the list
+	cdr: gives you the tail of the list
+
+	first: head
+	rest: tail
+-constructor
+	cons
+		list
+
+(setq x '(a b c d))
+(a b c d)
+
+(car x)
+a
+
+(cdr x)
+b c d
+
+-If we wanted just c, we could do this:
+(car (cdr (cdr x)))
+
+-We want to extract b
+(setq x '(a (b c) d e))
+(car (car (cdr x)))
+
+-To combine things in a list, we can use cons
+(cons 1 nil)
+(1)
+
+(cons a nil)
+	-> this would cause an error because a has not been defined
+(cons 'a nil)
+(a)
+
+(cons 1 (cons 2 nil))
+(1 2)
+
+(set x '(3 4))
+(3 4)
+
+(cons 1 (cons x nil))
+(1 (3 4))
+
+-If we wanted 1 to be a part of the list (3 4) -> (1 3 4)
+(cons 1 '(3 4))
+
+-------------------
+Boolean Expressions
+-------------------
+-There is something that represents false and everything else is true
+-"nil" represents false, and anything that is not nil is true
+
+-To check whether integers are positive or negative, we can use the following functions:
+
+(evenp _)
+(oddp _)
+
+(evenp 3)
+nil
+
+(evenp 4)
+T
+
+-We can check to see if something is a list rather than just an atom by using "listp":
+(listp 1)
+nil
+
+(listp '(a b))
+T
+
+-We can apply an inverting operation by using "not"
+(> 3 1)
+T
+
+(not (> 3 1))
+nil
+
+-We also have access to logical operators AND and OR:
+
+(and (+ 2 3) (+ 1 3))
+4
+	-> if all expressions evaluate to non-nil, the convention is that the last expression's value will be returned 
+
+(or (+2 3) (+1 3))
+5
+
+--------
+Branches
+--------
+-Conditional statements in lisp are denoted by "COND"
+
+(cond ((= x 0) 0)
+	((< x 0) 'neg)
+	((> x 0) 'pos))
+
+	-> If none of the conditions fire then this evaluates to nil 
+
+-We can add a default expression by adding a "t" to force a truth in the last expression
+
+(cond ((= x 0) 0)
+	((< x 0) 'neg)
+	(t 'pos))
+
