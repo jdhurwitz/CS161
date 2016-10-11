@@ -1,0 +1,104 @@
+------------
+Discussion 2
+------------
+
+Search Problem Definition 
+1) Initial state
+2) Goal test 
+3) Actions and rules 
+	actions(state): returns set of actions
+4) Transition Function
+	Successor(s): returns set of legal states
+5) Cost function
+
+-> These provide us with a state space
+-Our optimal solution has the lowest path cost among the set of solutions
+
+EX1: Using only 3 colors , color a grid such that no two adjacent cells have the same color.
+(grid coloring problem)
+
+1) IS: no cell is colored
+2) Goal Test (GT): 
+	-Every cell is colored
+	-We don't need to check that every cell has different adjacent colors because that is taken care of in the transition function
+3) Actions: 
+	-color a cell: color(i, j, color)
+4) Transitions
+	-The transition will move us to a new state where cells i and j are colored
+	color(i, j, color) -> colors(i, j)
+
+	-If no valid transitions are reached, we need to back track becuase this is not a solution.
+
+
+------------
+Search Types
+------------
+-There are 4 ways to help classify search algorithms:
+	1) completeness
+	2) optimality 
+	3) time complexity 
+	4) space complexity
+
+	3,4)
+		-b: branching factor
+		-d: depth of optimal solution
+		-m: depth of tree
+
+Fringe/frontier: the set of all leaf nodes available to expand
+
+-Expanding a node
+	1) Check to see if current node is the goal state
+	2) Generate children
+
+	note: depending on search algorithm (not BFS or DFS), it matters if you check for the goal in the current node or when generating children (1 vs 2)
+
+---
+BFS
+---
+1) Expand node on fringe with smallest depth
+2) Check to see if we have reached a goal state
+	-If yes, stop
+	-If not, go back to 1
+
+-You will never expand a node at depth k without expanding everything < k
+-For BFS, we need FIFO. We use a queue.
+
+Classification:
+	1) Completeness: BFS will find a solution if it exists
+	2) Optimality: BFS is optimal
+	3) Time Complexity: O(b^d)
+	4) Space Complexity: O(b^d)
+		-b^d is the number of nodes on the last level, which is what sets our upper bound. We also have to store the rest of the tree in memory.
+
+-From a design perspective, we care more about space complexity because we can wait for something to process, but may not have the neccessary amount of memory. 
+
+---
+DFS
+---
+-This fringe acts like a stack (LIFO)
+
+Classification:
+	1) Completeness: not complete because we may go down an infinite path (m may be infinite).
+	2) Optimality: DFS is not optimal because we may go down a deeper path than necessary. For example, if a solution exists on the current level we're on but we expand a node other than that solution, we'll go down a deep path.
+	3) Time Complexity: O(b^m)
+		-We may have to expand all of the nodes in the tree
+	4) Space Complexity: O(bm)
+		-The space complexity is only the depth of the tree. 
+
+-----------
+Limited DFS
+-----------
+1) Complete
+2) Optimal 
+3) O(b^d)
+4
+
+-------------------
+Uniform Cost Search
+-------------------
+-We are not using a greedy approach. Consider total path cost to the next possible nodes. 
+-Choose the minimum net cost next path.
+
+(minimize path cost)
+
+note: This is an example algorithm where we check goal state while we're expanding
