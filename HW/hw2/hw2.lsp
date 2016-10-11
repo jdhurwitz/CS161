@@ -19,3 +19,12 @@
 
 ; Problem 2
 ; Depth-First Iterative-Deepening
+; DFID: top level function taking two arguments
+;	inputs: list representation of tree, integer for max depth
+; 	output: a single top-level list of terminal nodes in order visited for IDFS
+; Example: (dfid '((A (B)) C (D)) 3) -> (C A C D A B C D)
+;
+; Functions must work for trees of arbitrary depth and branching factor 
+;	-> do not assume a priori that an upper bound exists on these parameters
+; EX2: (A (B C) (D) (E (F G)))
+
