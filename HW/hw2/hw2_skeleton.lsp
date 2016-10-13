@@ -29,8 +29,17 @@
 
 ; FINAL-STATE takes a single argument (S), the current state, and returns T if
 ; it is the goal state (3 3 NIL) and NIL otherwise.
+
 (defun final-state (s)
-  ...)
+	(cond
+		(and
+			(equal (first s) 3)
+			(equal (second s) 3)
+			(equal (third s) nil)
+		)
+		(t NIL)
+	)
+)
 
 ; NEXT-STATE returns the state that results from applying an operator to the
 ; current state. It takes three arguments: the current state (S), a number of
