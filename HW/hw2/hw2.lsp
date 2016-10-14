@@ -155,9 +155,11 @@
 
 		;We know that there are 3-var on the other side
 		((and 
-			(> (- 3 (first s)) 0) 
-			(> (+ (- 3 (second s)) c) (+ (- 3 (first s)) m))) 
-		NIL)
+			(> (+ (- 3 (first s)) m) 0) 
+			(> (+ (- 3 (second s)) c) (+ (- 3 (first s)) m))
+		) NIL)
+
+
 
 		;Else, it is valid and we create the return state
 		(t  
@@ -170,6 +172,8 @@
 	)
 	
 )
+
+
 
 ; SUCC-FN returns all of the possible legal successor states to the current
 ; state. It takes a single argument (S), which encodes the current state, and
@@ -201,13 +205,23 @@
 ; state, MULT-DFS returns the complete path from the initial state to the goal
 ; state. Otherwise, it returns NIL.
 
-; PATH: path from initial state to current state 
-;	-FIFO list of states
-;	-First element is the initial state & last element is most recent state explored
-; STATES: valid successor states to last state in the path 
 
-;(defun mult-dfs (states path depth)
-;  ...)
+(defun mult-dfs (states path depth)
+	(cond
+		((null states) NIL)
+
+		;We try a single DFS on the first state. If it doesn't return nil, we return that
+		((not(equal (SINGLE-DFS (first states) path depth) nil)) 
+			(SINGLE-DFS (first states) path depth)
+		)
+
+		;Else we need to go to the rest of the states in the list "states"
+		(t (MULT-DFS (rest states) path depth))
+
+	)
+)
+
+
 
 ; SINGLE-DFS does a single depth-first iteration to the given depth. It takes
 ; three arguments: a state (S), the path from the initial state to S (PATH), and
@@ -215,8 +229,32 @@
 ; NIL. It performs a depth-first search starting at the given state. It returns
 ; the path from the initial state to the goal state, if any, or NIL otherwise.
 
-;(defun single-dfs (s path depth)
-;  ...)
+(defun single-dfs (s path depth)
+	(cond
+		((and
+			(equal depth 0)
+			(not(final-state s))
+		) NIL)
+
+		 ;we hit a final state and can add our goal to the total path
+		((final-state s) 
+			(append path (list s))
+		)
+
+		;we want to explore the other states, so we need to generate successors
+		;we can process the set of possible successors by using mult
+		(t
+			(mult-dfs
+				(succ-fn s)
+				(append path (list s))
+				(- depth 1)
+			)
+		)
+	)
+)
+
+
+
 
 ; ID-DFS is the top-level function. It takes two arguments: an initial state (S)
 ; and a search depth (DEPTH). ID-DFS performs a series of depth-first
@@ -224,8 +262,19 @@
 ; returns the path from the initial state to the goal state. The very first call
 ; to ID-DFS should use depth = 0.
 
-;(defun id-dfs (s depth)
-;  ...)
+(defun id-dfs (s depth)
+	(print depth)
+	(cond
+		(
+			(not(equal (single-dfs s nil depth) NIL)) 
+				(single-dfs s nil depth)
+
+		)
+		(t 
+			(id-dfs s (+ depth 1))
+		)
+	)
+)
 
 ; Function execution examples
 
@@ -242,4 +291,6 @@
 ; operators to the current state.
 ; (succ-fn '(3 3 t)) -> ((0 1 NIL) (1 1 NIL) (0 2 NIL))
 ; (succ-fn '(1 1 t)) -> ((3 2 NIL) (3 3 NIL))
+
+
 
