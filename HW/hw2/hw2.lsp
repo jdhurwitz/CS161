@@ -263,13 +263,16 @@
 ; to ID-DFS should use depth = 0.
 
 (defun id-dfs (s depth)
-	(print depth)
+	;(print depth)
 	(cond
 		(
+			;If single DFS doesn't return NIL, we have a result
 			(not(equal (single-dfs s nil depth) NIL)) 
 				(single-dfs s nil depth)
 
 		)
+
+		;else increase depth and keep searching
 		(t 
 			(id-dfs s (+ depth 1))
 		)
