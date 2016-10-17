@@ -181,7 +181,7 @@
   (cond
 	   ((atom s) 
 	    (cond
-	     ((equal s 2) NIL)
+	     ((isBox(s)) NIL)
 	     (t t)
 	    )
 	   )
@@ -197,6 +197,8 @@
   )
 );end defun
 
+
+;--------------------------------------------------------------------------------------------
 ; EXERCISE: Modify this function to return the list of
 ; sucessor states of s.
 ;
@@ -214,7 +216,12 @@
 ; 
 ; You will need to define the function try-move and decide how to represent UP,DOWN,LEFT,RIGHT.
 ; Any NIL result returned from try-move can be removed by cleanUpList.
-;
+
+
+; UP = 1
+; DOWN = 2
+; LEFT = 3
+; RIGHT = 4
 (defun next-states (s)
   (let* ((pos (getKeeperPosition s 0))
 	 (x (car pos))
@@ -225,6 +232,120 @@
     (cleanUpList result);end
    );end let
   );
+
+
+; TRYMOVE
+; Inputs: state S, direction D
+; Output: 
+;			Move is valid -> state resulting from move
+;			Move is invalid -> NIL
+
+; Keeper cannot walk into a wall or box
+; Keeper can push box if square in pushing direction is a goal or empty
+; 	-> Only one box can be pushed in a step
+
+(defun try-move (S D)
+	;Get keeper direction
+	(let* ((pos (getKeeperPosition s 0))
+
+	 ; (c r)
+	 (c (car pos))
+	 (r (cadr pos))
+
+	 ;Figure out which direction we want to go in
+
+	; UP = 1
+	; DOWN = 2
+	; LEFT = 3
+	; RIGHT = 4
+	 (cond
+	 	;UP
+	 	((equal D 1))
+
+	 	;DOWN
+	 	((equal D 2))
+
+	 	:LEFT
+	 	((equal D 3))
+
+	 	:RIGHT
+	 	((equal D 4))
+	 )
+
+  	);end let
+)
+
+
+; GETSQUARE
+; We want to get the number that is stored at position (r,c) on the grid.
+; Inputs: state S, row R, col C
+; Outputs: 
+;			Outside of the grid -> 1 
+;			Valid position -> atom value (integer)
+
+(defun get-square (S R C)
+	(cond
+		;If the row value is zero, we want to look for the column in here
+		((equal R 0) (get-val (first S) C))
+
+		;The row value is > 0, so we want to go to the next option in the list
+		((> R 0) (get-square (rest S) (- R 1) C))
+
+	)
+)
+
+; Return a value from the list at index "i", indexed from 0.
+; Input: List of integers (L), index (i)
+; Output: Number at pos i
+(defun get-val (L i)
+	(cond
+		((> i (- (length L) 1)) 1)	;return 1 if it is out of bounds
+		((equal i 0) (first L))
+		(t (get-val (rest L) (- i 1)))
+	)
+)
+
+; Input: 
+;	S: state
+;	R: row
+;	C: col
+;	V: value to set
+; Output: State resulting from value(r, c) = v
+(defun set-square (S R C V)
+	(cond
+		;If R=0, we want to replace a value in the first of S and return
+		((equal R 0) 
+			(cond
+				((equal (set-val (first S) C V) NIL) NIL)
+				(t (append (list(set-val (first S) C V)) (rest S)))
+			)
+		)
+
+		
+		;If R > 0 then we need to go to the next row
+		((> R 0) 
+			(cond
+				((equal (set-square (rest S) (- R 1) C V) NIL) NIL)
+				(t (append (list(first S)) (set-square (rest S) (- R 1) C V)))
+			)
+		)
+	)
+)
+
+; Replace a value in the list L at index i with value v.
+(defun set-val (L i v)
+	(cond
+		;We check to see if we're trying to change something out of bounds, and return NIL
+		((> i (- (length L) 1)) NIL)
+
+		;We replace the front and return the rest of the list
+		((equal i 0) (append (list v) (rest L)))
+		(t (append (list(first L)) (set-val (rest L) (- i 1) v)))
+	)
+)
+;------------------------------------------------------------------------------------------
+
+
 
 ; EXERCISE: Modify this function to compute the trivial
 ; admissible heuristic.
