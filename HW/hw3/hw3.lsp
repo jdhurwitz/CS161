@@ -181,7 +181,7 @@
   (cond
 	   ((atom s) 
 	    (cond
-	     ((isBox(s)) NIL)
+	     ((isBox s) NIL)
 	     (t t)
 	    )
 	   )
@@ -250,7 +250,7 @@
 
 	 ; (c r)
 	 (c (car pos))
-	 (r (cadr pos))
+	 (r (cadr pos)))
 
 	 ;Figure out which direction we want to go in
 
@@ -260,20 +260,58 @@
 	; RIGHT = 4
 	 (cond
 	 	;UP
-	 	((equal D 1))
+	 	((equal D 1) 
+			(let* ((up_val (get-square S (- r 1) c)))
+				(print up_val)
+		 		(cond
+		 			;Blank Check
+		 			((isBlank up_val) 
+		 					(set-square (set-square S (- r 1) c 3) r c 0)
+		 					
+		 			)
 
+		 			;Wall check
+		 			((isWall up_val) NIL)
+
+		 			;Box Check
+		 			; ->We can push a box if the slot in the pushing direction is open or a goal
+		 			((isBox up_val)
+		 				(set-square
+		 					(set-square 
+		 						(set-square S (- r 2) c 1)
+		 					 (- r 1) c 3) 
+		 				r c 0)
+		 			)
+
+		 			;Goal (Star) Check for keeper
+		 			((isStar up_val)
+		 					(set-square (set-square S (- r 1) c 6) r c 0)
+		 			)
+
+
+				)
+			)
+	 	)
+	
 	 	;DOWN
-	 	((equal D 2))
+	 	((equal D 2)
+	 		(execute-move S (+ r 1) c 2)
+	 	)
 
-	 	:LEFT
-	 	((equal D 3))
+	 	;LEFT
+	 	((equal D 3)
+	 		(execute-move S r (- c 1) 3)
+		)
 
-	 	:RIGHT
-	 	((equal D 4))
+	 	;RIGHT
+	 	((equal D 4)
+			(execute-move S r (+ c 1) 4)
+		)
 	 )
 
   	);end let
 )
+
 
 
 ; GETSQUARE
