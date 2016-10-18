@@ -176,27 +176,32 @@
 ; terminate until the whole search space is exhausted.
 ;
 
+
 ;Recursively check each row to see if there is a box that is not in a goal position (check for 2)
 (defun goal-test (s)
-  (cond
-	   ((atom s) 
-	    (cond
-	     ((isBox s) NIL)
-	     (t t)
-	    )
-	   )
+	(cond
+		((null s) t)
 
-	   ((listp s)
-	   	(cond
-	   		((and 
-	   			(equal (goal-test (first s))  t)
-	   			(equal (goal-test (rest s))  t)
-	   		) t)
-	   	)
-	   )
-  )
-);end defun
+		;Get the first element of the state (a list) and check for a box
+		; If box -> we fail
+		; Else 	 -> we continue checking
+		((box-exists (first s)) NIL)
 
+		(T
+			(goal-test (rest s))
+		)
+	)
+)
+
+(defun box-exists(L)
+	(cond
+		((null L) NIL) ;if the list is empty, no box exists
+		((isBox (first L)) T)
+		(T
+			(box-exists (rest L))
+		)
+	)
+)
 
 ;--------------------------------------------------------------------------------------------
 ; EXERCISE: Modify this function to return the list of
@@ -224,14 +229,15 @@
 ; RIGHT = 4
 (defun next-states (s)
   (let* ((pos (getKeeperPosition s 0))
-	 (x (car pos))
-	 (y (cadr pos))
-	 ;x and y are now the coordinate of the keeper in s.
-	 (result nil)
-	 )
+	 (c (car pos))
+	 (r (cadr pos))
+
+     ;(result (list (try-move s UP) (try-move s DOWN) (try-move s LEFT) (try-move s RIGHT)))
+     (result (list (try-move s 1) (try-move s 2) (try-move s 3) (try-move s 4)))
+     )
     (cleanUpList result);end
    );end let
-  );
+ )
 
 
 ; TRYMOVE
@@ -245,73 +251,343 @@
 ; 	-> Only one box can be pushed in a step
 
 (defun try-move (S D)
-	;Get keeper direction
-	(let* ((pos (getKeeperPosition s 0))
+	(let* ((pos (getKeeperPosition S 0))
+		(c (car pos))
+		(r (cadr pos)))
 
-	 ; (c r)
-	 (c (car pos))
-	 (r (cadr pos)))
+		(cond
+			;is-illegal will return T for an illegal move
+			;				 return NIL for a legal move
+			((is-illegal S D) NIL)	
 
-	 ;Figure out which direction we want to go in
-
-	; UP = 1
-	; DOWN = 2
-	; LEFT = 3
-	; RIGHT = 4
-	 (cond
-	 	;UP
-	 	((equal D 1) 
-			(let* ((up_val (get-square S (- r 1) c)))
-				(print up_val)
-		 		(cond
-		 			;Blank Check
-		 			((isBlank up_val) 
-		 					(set-square (set-square S (- r 1) c 3) r c 0)
-		 					
-		 			)
-
-		 			;Wall check
-		 			((isWall up_val) NIL)
-
-		 			;Box Check
-		 			; ->We can push a box if the slot in the pushing direction is open or a goal
-		 			((isBox up_val)
-		 				(set-square
-		 					(set-square 
-		 						(set-square S (- r 2) c 1)
-		 					 (- r 1) c 3) 
-		 				r c 0)
-		 			)
-
-		 			;Goal (Star) Check for keeper
-		 			((isStar up_val)
-		 					(set-square (set-square S (- r 1) c 6) r c 0)
-		 			)
-
-
-				)
+			;If the move is legal, then we can move the keeper
+			(t 
+				(move-keeper S D r c)
 			)
-	 	)
-	
-	 	;DOWN
-	 	((equal D 2)
-	 		(execute-move S (+ r 1) c 2)
-	 	)
-
-	 	;LEFT
-	 	((equal D 3)
-	 		(execute-move S r (- c 1) 3)
 		)
+	)
 
-	 	;RIGHT
-	 	((equal D 4)
-			(execute-move S r (+ c 1) 4)
-		)
-	 )
-
-  	);end let
 )
 
+; Update the old state of the keeper
+
+(defun move-keeper (S D r c)
+	(let* ((updated_state (execute-move S D r c))) 
+		(cond
+
+			;Check to see if the keeper is on a star
+			; If so -> move the keeper and set to star
+			((isKeeperStar (get-square S r c))
+				(set-square updated_state r c star)
+			)
+
+			;Else it is not a star and should be set blank
+			(t
+				(set-square updated_state r c blank )
+			)
+		)
+	)
+)
+
+; Execute the actual keeper move
+(defun execute-move (S D r c)
+	(let* ((obj_up (get-square S (- r 1) c))
+		    (obj_down (get-square S (+ r 1) c))
+		    (obj_left (get-square S r (- c 1)))
+		    (obj_right (get-square S r (+ c 1))))
+		(cond
+				;If we've gotten here, we know it's a legal move to push the keeper up. This means
+				;that whatever is in the position 1 unit up from our D value can be pushed up 1 more
+				;unit.
+				;Set the keeper to be keeperStar if we identify move location has a star or boxStar
+
+			((equal D 1) ;UP
+				;Check if we find a star or a boxstar
+				(cond
+					((or
+						(isStar obj_up)
+						(isBoxStar obj_up)
+					) (set-square (move-objects S D r c) (- r 1) c keeperstar))
+
+					; This means that there is only a blank spot to move to
+					(t 
+					  (set-square (move-objects S D r c) (- r 1) c keeper)
+					)
+				)
+			)
+
+			((equal D 2) ;DOWN
+				(cond
+					((or
+						(isStar obj_down)
+						(isBoxStar obj_down)
+					) (set-square (move-objects S D r c) (+ r 1) c keeperstar))
+
+					(t
+						(set-square (move-objects S D r c) (+ r 1) c keeper)
+					)
+				)
+			)
+			((equal D 3) ;LEFT
+				(cond
+					((or
+						(isStar obj_left)
+						(isBoxStar obj_left)
+					) (set-square (move-objects S D r c) r (- c 1) keeperstar))
+
+					(t
+						(set-square (move-objects S D r c) r (- c 1) keeper)
+					)
+				)
+			)
+			((equal D 4) ;RIGHT
+				(cond
+					((or 
+						(isStar obj_right)
+						(isBoxStar obj_right)
+					) (set-square (move-objects S D r c) r (+ c 1) keeperstar))
+
+					(t
+						(set-square (move-objects S D r c) r (+ c 1) keeper)
+					)
+				)
+			)				
+		)
+	)
+
+)
+
+;Move objects
+; -We check to see if there is an object in the direction we want to move in
+; 	If yes -> move the object 1 more unit in that direction
+; 	If no  -> return input state S (no mods)
+
+;note: If we reach this function we know we have a valid move, and can move whatever box
+; 		one unit in the direction we are requesting.
+(defun move-objects (S D r c)
+	(let* ((obj_up (get-square S (- r 1) c))
+		    (obj_down (get-square S (+ r 1) c))
+		    (obj_left (get-square S r (- c 1)))
+		    (obj_right (get-square S r (+ c 1))))
+		(cond
+			((equal D 1) ;UP
+
+				;If the object up is a box or box star and we have a legal move, we can move it
+				;up one more unit
+				(cond
+					((or
+						(isBox obj_up)
+						(isBoxStar obj_up)
+					) (cond
+							((isStar (get-square S (- r 2) c)) 
+								(set-square S (- r 2) c boxStar)
+							)
+							((isBlank (get-square S (- r 2) c))
+								(set-square S (- r 2) c box)
+							)
+					   )
+					)
+
+					;If no box to move, then return an unmodified state S
+					(t
+						S
+					)
+				)
+			)
+			((equal D 2) ;DOWN
+				(cond
+					((or
+						(isBox obj_down)
+						(isBoxStar obj_down)
+					)(cond
+							((isStar (get-square S (+ r 2) c)) 
+								(set-square S (+ r 2) c boxStar)
+							)
+							((isBlank (get-square S (+ r 2) c))
+								(set-square S (+ r 2) c box)
+							)
+					   )
+					 )
+					;If no box to move, then return an unmodified state S
+					(t
+						S
+					)					
+				)
+			)
+			((equal D 3) ;LEFT
+				(cond
+					((or
+						(isBox obj_left)
+						(isBoxStar obj_left)
+					) (cond
+							((isStar (get-square S r (- c 2))) 
+								(set-square S r (- c 2) boxStar)
+							)
+							((isBlank (get-square S r (- c 2)))
+								(set-square S r (- c 2) box)
+							)
+					   )
+					 )
+
+					;If no box to move, then return an unmodified state S
+					(t
+						S
+					)					
+				)
+			)
+			((equal D 4) ;RIGHT
+				(cond
+					((or
+						(isBox obj_right)
+						(isBoxStar obj_right)
+					) (cond
+							((isStar (get-square S r (+ c 2))) 
+								(set-square S r (+ c 2) boxStar)
+							)
+							((isBlank (get-square S r (+ c 2)))
+								(set-square S r (+ c 2) box)
+							)
+					   )
+					 )
+
+
+					;If no box to move, then return an unmodified state S
+					(t
+						S
+					)
+
+				)
+			)	
+		 )
+	)
+)
+
+
+; IS-ILLEGAL
+; Check to see if moving direction D from r c in state S is illegal
+; If it's a wall -> illegal
+; If it's a box and 
+(defun is-illegal (S D)
+	(let* ((pos (getKeeperPosition s 0))
+		 (c (car pos))
+		 (r (cadr pos)))
+	 
+	 	(cond
+	 		;UP
+	 		((equal D 1)
+	 			 (let* ((up_val (get-square S (- r 1) c)) 
+	 			 		(up_val2 (get-square S (- r 2) c)) )
+	 			 	(cond
+	 			 	;	((or (equal up_val NIL) (equal up_val2 NIL)) T)
+
+	 			 		((equal up_val NIL) T)
+	 			 		((isWall up_val) t)
+	 			 		((or (isBox up_val) (isBoxStar up_val))
+	 			 			(cond
+	 			 				((equal up_val2 NIL) T)
+	 			 				(t
+	 			 					(or
+			 			 				;Fail if 2 positions up is a wall, box+goal, or box
+			 			 				(isBox up_val2)
+			 			 				(isWall up_val2)
+			 			 				(isBoxStar up_val2)
+			 			 			)
+	 			 				)
+	 			 			)
+	 			 			
+	 			 		)
+
+	 			 	)
+	 			 )
+	 		)
+
+	 		;DOWN
+	 		((equal D 2)
+	 			 (let* ((down_val (get-square S (+ r 1) c)) 
+	 			 		(down_val2 (get-square S (+ r 2) c)) )
+	 			 	(cond
+;	 			 		((or (equal down_val NIL) (equal down_val2 NIL)) T)
+						((equal down_val NIL) T)
+
+	 			 		((isWall down_val) t)
+	 			 		((or (isBox down_val) (isBoxStar down_val))
+	 			 			(cond
+	 			 				((equal down_val2 NIL) T)
+	 			 				(t
+	 			 					(or
+			 			 				;Fail if 2 positions up is a wall, box+goal, or box
+			 			 				(isBox down_val2)
+			 			 				(isWall down_val2)
+			 			 				(isBoxStar down_val2)
+			 			 			)
+	 			 				)
+	 			 			)
+	 			 			
+	 			 		)
+	 			 	)
+	 			 )
+
+	 		)
+
+	 		;LEFT
+	 		((equal D 3)
+	 			 (let* ((left_val (get-square S r (- c 1))) 
+	 			 		(left_val2 (get-square S r (- c 2))) )
+	 			 	(cond
+	 			 	;	((or (equal left_val NIL) (equal left_val2 NIL)) T)
+	 			 		((equal left_val NIL) T)
+
+	 			 		((isWall left_val) t)
+	 			 		((or (isBox left_val) (isBoxStar left_val))
+	 			 			(cond
+	 			 				((equal left_val2 NIL) T)
+	 			 				(t
+	 			 					(or
+			 			 				;Fail if 2 positions up is a wall, box+goal, or box
+			 			 				(isBox left_val2)
+			 			 				(isWall left_val2)
+			 			 				(isBoxStar left_val2)
+			 			 			)
+	 			 				)
+	 			 			)
+	 			 			
+	 			 		)
+	 			 		(t NIL)
+	 			 	)
+	 			 )
+	 		)
+
+	 		;RIGHT
+	 		((equal D 4)
+	 			 (let* ((right_val (get-square S r (+ c 1))) 
+	 			 		(right_val2 (get-square S r (+ c 2))) )
+	 			 	(cond
+	 			 		;((or (equal right_val NIL) (equal right_val2 NIL)) T)
+	 			 		((equal right_val NIL) T)
+
+	 			 		((isWall right_val) t)
+	 			 		((or (isBox right_val) (isBoxStar right_val))
+	 			 			(cond
+	 			 				((equal right_val2 NIL) T)
+	 			 				(t
+	 			 					(or
+			 			 				;Fail if 2 positions up is a wall, box+goal, or box
+			 			 				(isBox right_val2)
+			 			 				(isWall right_val2)
+			 			 				(isBoxStar right_val2)
+			 			 			)
+	 			 				)
+	 			 			)
+	 			 			
+	 			 		)
+
+	 			 	)
+	 			 )
+	 		)
+
+	 	)
+ 	)
+)
 
 
 ; GETSQUARE
@@ -338,6 +614,7 @@
 (defun get-val (L i)
 	(cond
 		((> i (- (length L) 1)) 1)	;return 1 if it is out of bounds
+		((< i 0) NIL)
 		((equal i 0) (first L))
 		(t (get-val (rest L) (- i 1)))
 	)
