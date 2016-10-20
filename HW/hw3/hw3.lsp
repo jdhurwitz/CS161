@@ -718,7 +718,6 @@
 ; p13: expanded 1205, generated 4061
 ; p14: expanded 3845, generated 10351
 ; p15: expanded 13163, generated 13163
-; p16: expanded: 155067, generated 398908
 ; p17: expanded 62368, generated 177050
 ; p18: expanded 303, generated 1024
 ; p19: expanded 81, generated 245
