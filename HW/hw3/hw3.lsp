@@ -708,6 +708,8 @@
 ; running time of a function call.
 ;
 
+;h804258351 calculates the sum of Manhattan distances for each box and creates
+;an output value that represents approximate cost of moving to all the boxes
 
 ;Experimental data results for h804258351:
 ; p2: expanded 62, generated 180
@@ -721,7 +723,7 @@
 ; p18: expanded 303, generated 1024
 ; p19: expanded 81, generated 245
 ; p20-p22: stack overflow
-; p21: 
+
 
 (defun h804258351 (s)
   (let* ((pos (getKeeperPosition s 0))
@@ -763,7 +765,7 @@
 	)
 )
 
-;Searches row for box, returns list of col positions L_c
+;Searches a row for boxes, returns list of col positions L_c
 (defun search-row (R i)
 	(cond
 		((null R) NIL)
@@ -774,7 +776,10 @@
 	)	
 )
 
-;Create coordinate list
+;Create coordinate list 
+;Example: R_num = 0, C_boxvals = (1 2 3 4)
+;Output: ((0 1) (0 2) (0 3) (0 4))
+
 (defun create-pairs (R_num C_boxvals)
 	(cond
 		((null C_boxvals) NIL)
@@ -789,7 +794,7 @@
 )
 
 
-;Get the coordinates of all boxes
+;Get all of the coordinates where each box is located.
 (defun get-box-coords (S i)
 	(cond
 		((null S) NIL)
