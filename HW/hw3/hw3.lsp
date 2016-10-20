@@ -674,6 +674,9 @@
 
 ; Boxes not on goals are represented by integer "2", so we only need to count 
 ; the number of "2" occurrences in the state.
+
+; h1 is admissible. It will not overestimate the cost to reach a goal state, because
+; the cost to reach a goal state is at minimum the #of moves to move the box to the goal
 (defun h1 (s)
 	(cond
 
@@ -704,8 +707,102 @@
 ; The Lisp 'time' function can be used to measure the
 ; running time of a function call.
 ;
+
+
+;Experimental data results for h804258351:
+; p2: expanded 62, generated 180
+; p10: expanded 6587, generated 17241
+; p12: expanded 7098, generated 22301
+; p13: expanded 1205, generated 4061
+; p14: expanded 3845, generated 10351
+; p15: expanded 13163, generated 13163
+; p16: expanded: 155067, generated 398908
+; p17: expanded 62368, generated 177050
+; p18: expanded 303, generated 1024
+; p19: expanded 81, generated 245
+; p20-p22: stack overflow
+; p21: 
+
 (defun h804258351 (s)
+  (let* ((pos (getKeeperPosition s 0))
+		 (c (car pos))
+		 (r (cadr pos)))
+
+		 (*
+			 (get-move-cost 
+			 	(append (list r) (list c))
+			 	(get-box-coords S 0)
+			 )
+			 (h1 s)
+		 )
+
+
   )
+)
+
+;We need to sum the Manhattan distances from player to each box
+; player position is list pos = (r c)
+(defun get-move-cost (pos box_coords )
+	(cond
+		((null box_coords) 0)
+		(t
+			(+
+				(calc-manhattan pos (first box_coords))
+				(get-move-cost pos (rest box_coords))
+			)
+		)
+
+	)
+)
+
+;Calculate Manhattan Distance between two points (x1, y1) (x2, y2)
+(defun calc-manhattan (P1 P2)
+	(+ 
+		(abs (- (first P1) (first P2)))
+		(abs (- (second P1) (second P2)))
+	)
+)
+
+;Searches row for box, returns list of col positions L_c
+(defun search-row (R i)
+	(cond
+		((null R) NIL)
+		((isBox (first R)) (append (list i) (search-row (rest R) (+ i 1)) ))
+		(t
+			(search-row (rest R) (+ i 1))
+		)
+	)	
+)
+
+;Create coordinate list
+(defun create-pairs (R_num C_boxvals)
+	(cond
+		((null C_boxvals) NIL)
+		(t
+			(append
+				(list(append (list R_num) (list(first C_boxvals))))
+				(create-pairs R_num (rest C_boxvals))
+			)
+		)
+	)
+
+)
+
+
+;Get the coordinates of all boxes
+(defun get-box-coords (S i)
+	(cond
+		((null S) NIL)
+
+		;row 0 from this perspective
+		(t
+			(append
+				(create-pairs i (search-row (first S) 0))
+				(get-box-coords (rest S) (+ i 1))
+			)
+		)
+	)
+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
