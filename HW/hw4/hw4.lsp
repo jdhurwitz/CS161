@@ -141,7 +141,9 @@
 ;		-Choose first var w/ domain with size 2 (T, F) (means it hasn't been assigned yet)
 
 (defun solve (CUR_DOMAIN CNF)
-	(let ((unary (GET-ASSIGNABLE-UNARY (FIND-UNARY CNF) CUR_DOMAIN))) 
+	(let ((unary (GET-ASSIGNABLE-UNARY (FIND-UNARY CNF) CUR_DOMAIN))
+   	 	  (reversed_dom (reverse CUR_DOMAIN))
+		 ) 
 		(cond
 			((CHECK-FOR-EMPTY CUR_DOMAIN) NIL) 	;If any domain is NIL, no solution on path
 			((null CUR_DOMAIN) NIL)				;No answer
@@ -187,59 +189,52 @@
 			;Otherwise, we find the next var with domain size = 2 and choose T
 			;GET-VAR-DOM2 lets us find the next var with domain size 2
 			(t
-				(cond
-					;We try T first
-					((not(equal 
-							(solve
-								(UPDATE-RELATED-DOMAINS
-									(UPDATE-SINGLE-DOMAIN (GET-VAR-DOM2 CUR_DOMAIN) CUR_DOMAIN)
-									CNF
-								)
-								CNF
-							)
-							NIL
-						))
-							;Return the result of solving it
-							(solve
-								(UPDATE-RELATED-DOMAINS
-									(UPDATE-SINGLE-DOMAIN (GET-VAR-DOM2 CUR_DOMAIN) CUR_DOMAIN)
-									CNF
-								)
-								CNF
-							)						
-
-					)
-
-					;If that fails, we try F
-					((not(equal 
-							(solve
-								(UPDATE-RELATED-DOMAINS
-									(UPDATE-SINGLE-DOMAIN ( -(GET-VAR-DOM2 CUR_DOMAIN)) CUR_DOMAIN)
-									CNF
-								)
-								CNF
-							)
-							NIL
-						))
-						;Return the reuslt of solving
-							(solve
-								(UPDATE-RELATED-DOMAINS
-									(UPDATE-SINGLE-DOMAIN (-(GET-VAR-DOM2 CUR_DOMAIN)) CUR_DOMAIN)
-									CNF
-								)
-								CNF
-							)						
-					)
-
-					;Everything fails so give up
-					(T
-						NIL
-					)
-
-				)
+				(SOLVE-BRANCH CUR_DOMAIN)
 
 			)
 		)
+	)
+)
+
+; SOLVE-BRANCH
+; We encounter the case where we need to check T, and then check F otherwise
+(defun SOLVE-BRANCH (CUR_DOMAIN CNF)
+	(let ((T_sol 
+			(solve
+				(UPDATE-RELATED-DOMAINS
+					(UPDATE-SINGLE-DOMAIN (GET-VAR-DOM2 CUR_DOMAIN) CUR_DOMAIN)
+					CNF
+				)
+				CNF
+			)
+		  )
+		  (F_sol 
+			(solve
+				(UPDATE-RELATED-DOMAINS
+					(UPDATE-SINGLE-DOMAIN (- (GET-VAR-DOM2 CUR_DOMAIN)) CUR_DOMAIN)
+					CNF
+				)
+				CNF
+			)
+		  )
+		)
+	(cond
+		;Valid solution for T
+		((not(equal T_sol NIL))
+			T_sol
+		)
+
+		;Valid solution for F
+		((not(equal F_sol NIL))
+			F_sol
+		)
+
+		;Nothing. Give up and go home.
+		(T
+			NIL
+		)
+	)
+
 	)
 )
 
