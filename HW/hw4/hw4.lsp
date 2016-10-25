@@ -141,18 +141,27 @@
 ;		-Choose first var w/ domain with size 2 (T, F) (means it hasn't been assigned yet)
 
 (defun solve (CUR_DOMAIN CNF)
-	(let ((unary (GET-ASSIGNABLE UNARY (FIND-UNARY CNF)))) 
+	(let ((unary (GET-ASSIGNABLE-UNARY (FIND-UNARY CNF) CUR_DOMAIN))) 
 		(cond
-			((CHECK-FOR-EMPTY CUR-DOMAIN) NIL) 	;If any domain is NIL, no solution on path
+			((CHECK-FOR-EMPTY CUR_DOMAIN) NIL) 	;If any domain is NIL, no solution on path
 			((null CUR_DOMAIN) NIL)				;No answer
 
 			;Check to see if all variables have domain = 1
 			((equal (NUM-FULL-DOMAINS CUR_DOMAIN) 0)
 				;If so, we are ready to test to see if our assignments satsify the CNF
-				(EVAL-CNF
-					CNF
-					(DOM-TO-ASSN (reverse CUR_DOMAIN)) 
-				
+				(cond
+					((EVAL-CNF
+						CNF
+						(DOM-TO-ASSN (reverse CUR_DOMAIN)) 
+					) 
+						;We return the assignment
+						(DOM-TO-ASSN (reverse CUR_DOMAIN))
+					)
+
+					;The assignment failed, return NIL and backtrack
+					(T
+						NIL
+					)
 				)
 			)
 
@@ -163,17 +172,73 @@
 				;Pass the updated single value to check across all other domains 
 				;in case a constraint needs to be forced
 
+				(solve
+					(UPDATE-RELATED-DOMAINS 
+						;Returns an updated domain for the unary var
+						(UPDATE-SINGLE-DOMAIN unary CUR_DOMAIN)
 
-				(UPDATE-RELATED-DOMAINS 
-					;Returns an updated domain for the unary var
-					(UPDATE-SINGLE-DOMAIN unary CUR_DOMAIN)
-
+						CNF
+					)
 					CNF
 				)
 
 			)
 
 			;Otherwise, we find the next var with domain size = 2 and choose T
+			;GET-VAR-DOM2 lets us find the next var with domain size 2
+			(t
+				(cond
+					;We try T first
+					((not(equal 
+							(solve
+								(UPDATE-RELATED-DOMAINS
+									(UPDATE-SINGLE-DOMAIN (GET-VAR-DOM2 CUR_DOMAIN) CUR_DOMAIN)
+									CNF
+								)
+								CNF
+							)
+							NIL
+						))
+							;Return the result of solving it
+							(solve
+								(UPDATE-RELATED-DOMAINS
+									(UPDATE-SINGLE-DOMAIN (GET-VAR-DOM2 CUR_DOMAIN) CUR_DOMAIN)
+									CNF
+								)
+								CNF
+							)						
+
+					)
+
+					;If that fails, we try F
+					((not(equal 
+							(solve
+								(UPDATE-RELATED-DOMAINS
+									(UPDATE-SINGLE-DOMAIN ( -(GET-VAR-DOM2 CUR_DOMAIN)) CUR_DOMAIN)
+									CNF
+								)
+								CNF
+							)
+							NIL
+						))
+						;Return the reuslt of solving
+							(solve
+								(UPDATE-RELATED-DOMAINS
+									(UPDATE-SINGLE-DOMAIN (-(GET-VAR-DOM2 CUR_DOMAIN)) CUR_DOMAIN)
+									CNF
+								)
+								CNF
+							)						
+					)
+
+					;Everything fails so give up
+					(T
+						NIL
+					)
+
+				)
+
+			)
 		)
 	)
 )
@@ -250,7 +315,7 @@
 
 		;If there is not more than 1 var, we move on to the rest of the CNF
 		(t
-			(UDPATE-RELATED-DOMAINS updated_domains (rest CNF))
+			(UPDATE-RELATED-DOMAINS updated_domains (rest CNF))
 		)
 	)
 
@@ -408,8 +473,5 @@
 
 ; SAT-SOLVER
 (defun sat? (n delta)
-	(let (INIT_DOMAINS (CREATE-DOMAINS n))
-
-	)
-
+	(solve (create-domains n) delta)
 )
