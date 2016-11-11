@@ -2,6 +2,106 @@ Jonathan Hurwitz
 804258351
 CS161 - HW6 
 
+
+
+--------------------------------ANSWERS FOR #1--------------------------------
+a) P(A, B, B) P(x, y, z)
+
+{x|A, y|B, z|B}
+
+b) Q(y, G(A, B)), Q(G(x,x), y)
+Cannot unify since x cannot be both A and B.
+
+c) R(x, A, z), R(B, y ,z)
+{x|B, y|A, z|anything}
+
+-> z has no requirement so it can be anything/
+
+d) Older(Father(y), y), Older(Father(x), John)
+{y|John, x|John}
+
+e) Knows(Father(y), y), Knows(x, x)
+
+Cannot unify since we would have to unify y with Father(y), but
+that doesn't make sense.
+
+
+--------------------------------ANSWERS FOR #2--------------------------------
+a) Translating the sentences into FOL
+
+Ax Food(x) => Likes(John,x)
+Food(apples)
+Food(chicken)
+Ay[Ex Eats(x,y) & ~KilledBy(x,y)] => Food(y)
+Ax[Ey KilledBy(x,y)] => ~Alive(x)
+Eats(Bill, peanuts) & Alive(Bill)
+Ax Eats(Bill, x) => Eats(Sue, x)
+
+
+b) Converting formulas into CNF
+
+1. ~Food(x) | Likes(John, x)
+2. Food(apples)
+3. Food(chicken)
+4. ~Eats(x1, y1) | KilledBy(x1, y1) | Food(y1)
+5. ~KilledBy(x2,y2) | ~Alive(x2)
+6a. Eats(Bill, peanuts)
+6b. Alive(Bill)
+7. ~Eats(Bill, x) | Eats(Sue, x)
+
+
+c) Prove that "John likes Peanuts".
+We want to prove Likes(John, peanuts), so we have to use resolution to find
+a contradiction for ~Likes(John, peanuts)
+
+using 	Resolvant
+1 		~Food(peanuts)
+4 		~Eats(x1, peanuts) | KilledBy(x1, peanuts)
+6a 		KilledBy(Bill, peanuts)
+5 		~Alive(Bill)
+6b 		Alive(Bill)
+
+-> 5 and 6b are a contradiction, so we have shown that "John Likes Peanuts" or that Likes(John, peanuts) is true.
+
+d) Use resolution to answer, "What food does Sue eat?"
+Ex Eats(Sue, x) & Food(x)
+
+We need to show the negation of this:
+~Eats(Sue,x) | ~Food(x)
+
+Using 	Resolvant
+7 		~Eats(Bill, x) | ~Food(x)
+6a 		~Food(peanuts)
+4 		~Eats(x1, peanuts) | KilledBy(x1, peanuts)
+5 		~Eats(x1, peanuts) | ~Alive(x1)
+6 		~Alive(Bill)
+6b 		Alive(Bill)
+
+-> Since the resolvant from 6 and 6b contradict, we've shown that:
+ Sue eats peanuts.
+
+e) 
+Our new axioms:
+
+Ax (~Ey Eat(x,y) => Dead(x))
+Ax Dead(x) => ~Alive(x)
+Alive(Bill)
+
+Converting these to CNF:
+8. Eats(x, F(x)) | Dead(x)
+9. ~Dead(x) | ~Alive(x)
+10. Alive(Bill)
+
+We now use resolution to answer the question "What food does Sue eat?"
+
+Using 	Resolvant
+9,10 	~Dead(Bill)
+8 		Eats(Bill, F(Bill))
+7 		Eats(Sue, F(Bill))
+
+-> So we conclude that Sue eats whatever Bill eats. 
+
+--------------------------------ANSWERS FOR #3--------------------------------
 Rsat version: 3.01
 
 Since I have a Mac and didn't want to set up a VM, I obtained the output of my lisp function and then SCP'd it to the SEAS linux server in order to use the Rsat solver.
