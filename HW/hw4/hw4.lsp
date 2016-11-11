@@ -1,10 +1,11 @@
-;;Jonathan Hurwitz
-;;804258351
+; Jonathan Hurwitz
+; 804258351
+
 
 ;;CS161 hw4 - SAT
 
 ; Conjunction: terms are ANDed
-; Disjunctino: terms are ORed
+; Disjunction: terms are ORed
 
 ; A propositional sentence is a CNF iff it is a conjunction of clauses. Each clause is a disjunction of literals.
 
@@ -21,38 +22,248 @@
 ; 	(-1) means that we have !1, so 1 must be false in order for -1 to be true.
 
 
+(defun sat? (n delta)
+	(process-solution n 1 delta)
+)
+
+(defun process-solution (n init delta)
+	(let* ((pre_proc_sol (smart-DFS delta init n))
+		  (num_remaining (- n (length pre_proc_sol)))
+
+		)
+		(cond 
+			((equal (length pre_proc_sol) 0) NIL)
+			(T
+				(populate-sol pre_proc_sol num_remaining)
+			)
+		)
+
+	)
+)
 
 
-; DOM-TO-ASSN
-; Convert a domain set to assignment
-; EX: ((3 NIL)(2 T)(1 NIL)) -> (-1 2 -3)
-; First need to sort DOM to look like this: ((1 NIL)(2 T)(3 NIL))
-; This function must receive a list of variables with domains of size 1
+; smart-DFS will leave out all the variables that need to be set to T
+; cur_sol: the solution lacking the rest of the variables
+; vars_remaining: the # of variables we have left to add back in
 
-(defun DOM-TO-ASSN (sorted)
+(defun populate-sol (cur_sol vars_remaining)
 	(cond
-		((null sorted) NIL)
+		((equal vars_remaining 0) cur_sol)
 		(t
-			(cond
-				;We append the absolute value of the number 
-				((equal (first(second(first sorted))) T)
-					(append (list (abs(first(first sorted)))) 
-							(DOM-TO-ASSN (rest sorted))
-					)
+			(populate-sol 
+				(append
+					cur_sol
+					(list (+ (length cur_sol) 1))
 				)
 
-				;This means we need the negative of the var
-				((equal (first(second(first sorted))) NIL)
-					(append (list (- (first(first sorted)))) 
-							(DOM-TO-ASSN (rest sorted))
-					)
-				)
+				(- vars_remaining 1)
+			)
+		)
+	)
+)
+
+; In the example ((1 -2 3)(-1)(-2 -3)) it's easy to see that assigning a variable (e.g. 1 = 1) is 
+; the same thing as removing its inverse. So if we assign 1, we'd remove -1. 
+; -In the special case of assigning 1, we see that removing -1 causes this to fail since it is
+; a single element. We need to check for that.
+
+; Concept
+; -Check F first. If that branch isn't valid, we cut it off.
+; -Check T second. If that branch isn't valid, T/F assignments for this variable don't work
+; and we need to backtrack.
+; Acts like smart DFS
+
+; Inputs: 
+; 		cnf: the cnf (delta)
+;		cur_var: the current variable from (1...n) that we are processing
+;		n: the number of variables in the problem
+
+(defun smart-DFS (cnf cur_var n)
+		(cond ((null cnf) NIL)
+
+			  ;We've reached a single clause
+			  ((atom cnf) (list cnf))
+
+			  ;We've gone too far
+			  ((> cur_var n) NIL)
+
+			  ;Process the choice of taking T and the choice of taking F
+		  	  (t (let ((T_branch (process-branch cnf cur_var))
+		  	  	       (F_branch (process-branch cnf (- cur_var)))
+		  	  	      )
+		  	  	       
+		  	  	    ;If we choose F and it returns NIL, ultimately this branch needs
+		  	  	    ;to be pruned.
+			  	  	(if (null F_branch)
+						
+				  	  		(let ((assnT (smart-DFS T_branch (+ cur_var 1) n))) 
+
+				  	  			;No solution. Need to return NIL and backtrack
+					  	  	 	(if (null T_branch) NIL
+						  	  	 	(if (atom T_branch) (list cur_var)
+				 
+						  	  	 	(if (null assnT) NIL
+						  	  			(append (list cur_var) assnT))
+						  	  		)
+
+					  	  		) 
+
+				  	  		)
+
+				  	  	 ;ELSE
+				  	  	 ;If F_branch did not return NULL, we check to see if it is a single
+				  	  	 ;element. If so, that we can assign it by flipping it.
+				  	  	 (if (atom F_branch) (list (- cur_var)) 
+					  	  	 (let ((assnF (smart-DFS F_branch (+ cur_var 1) n)))
+						  	  	 (if (null assnF)
+						  	  	 	(let ((assnT (smart-DFS T_branch (+ cur_var 1) n)))
+
+						  	  	 	;No solution. Return NIL and backtrack.
+						  	  	 	(if (null assnT) NIL
+						  	  	 	    (append (list cur_var) assnT))) 
+						  	  	 	    
+						  	  	 	;Add this var (flip the bit to assign) to the solution.
+						  	  	 	(append (list (- cur_var)) assnF)
+						  	  	 ) 
+						  	  )
+					  	 )  
+				  	)
+		  	  	)
+		  	  )
+		)
+)
+
+
+; We process a branch and see if it is a valid path. We are assigning some number "cur_var" and 
+; need to see if by assigning it we violate anything (creating a null list, for example, by removing
+; its inverse).
+
+(defun process-branch (cnf cur_var)
+	(cond
+		((null cnf) NIL)
+
+		;We can't remove "cur_var" (check the negative)
+		((null (is-valid-removal cnf (- cur_var))) NIL)
+
+		;If it occurs in every list, it should be kept 
+		((null (remove-with-var cnf cur_var)) 
+			cur_var
+		)
+
+		;It's possible that the number doesn't appear in the lists (no constraint). We can just 
+		;return the CNF
+		((and
+			(equal (remove-with-var cnf cur_var) cnf)
+			(equal (remove-with-var cnf (- cur_var)) cnf)
+		) cnf)
+
+		;If this is true, we need to fail and explore the negative element
+		((equal (remove-with-var cnf cur_var) cnf) 
+			NIL
+		)
+
+		(T
+			(is-valid-removal (remove-with-var cnf cur_var) (- cur_var))
+		)
+	)
+)
+
+
+
+
+; Given a variable, remove all lists in which it is observed
+(defun remove-with-var (cnf cur_var)
+	(remove-with-varh1 cnf cur_var NIL)
+)
+
+; Assemble output
+(defun remove-with-varh1 (cnf cur_var output_cnf)
+	(cond
+		((null cnf) output_cnf)
+		((is-in-list cur_var (first cnf)) 
+			(remove-with-varh1 (rest cnf) cur_var output_cnf)
+		)
+		(T
+			(remove-with-varh1 (rest cnf) cur_var (append output_cnf (list (first cnf)) ))
+
+		)
+	)
+)
+
+; Checks to see if a variable is in a list
+(defun is-in-list (val L)
+	(cond
+		((null L) NIL)
+		((equal (first L) val) T)
+		(T
+			(is-in-list val (rest L))
+		)
+	)
+)
+
+
+
+
+
+;Gets the result of removing an element from each clause if the CNF is still valid
+(defun is-valid-removal (cnf cur_var)
+	(cond
+		((is-valid-cnf cnf cur_var)
+			(remove-elem-all cnf cur_var)
+		)
+		(T
+			NIL
+		)
+	)
+)
+
+;Removes an element from each clause
+(defun remove-elem-all (cnf val)
+	(cond
+		((null cnf) NIL)
+		(T
+			(append
+				(list (remove-element val (first cnf)))
+				(remove-elem-all (rest cnf) val)
+			)
+		)
+	)
+)
+
+;Checks to see if the CNF is still valid after an element is removed. If it is, we return the result
+;of removing the variable.
+(defun is-valid-cnf (cnf cur_var)
+	(cond
+		((null cnf) T)
+
+		;This means we made the clause false by doing some assignment
+		((equal (remove-element cur_var (first cnf)) NIL)
+			NIL
+		)
+		(T
+			(is-valid-cnf (rest cnf) cur_var)
+		)
+
+	)
+)
+
+;Removes an element from a list
+(defun remove-element (val L)
+	(cond
+		((null L) NIL)
+		((equal (first L) val) (remove-element val (rest L)))
+		(t
+			(append
+				(list (first L))
+				(remove-element val (rest L))
 			)
 		)
 	)
 )
 
 
+;Functions to test correctness 
+;--------------------------------------------------------------------------------------------
 ; EVAL-CLAUSE
 ; Takes the diff of the assignments and a clause
 ; If at least 1 term matches its corresponding assignment value, return T
@@ -98,375 +309,4 @@
 		)
 	)
 )
-
-; CREATE-DOMAINS
-; Creates the initial domain state list
-; EX: For 3 variables, we have a list (1 2 3)
-;	 The init domains will all have T and NIL as states
-;		( (1 (T NIL)) (2 (T NIL)) (3 (T NIL)) )
-
-; Input: n (number of variables)
-; Output: DOMAIN_STATE, a list of domain lists
-
-(defun CREATE-DOMAINS (n)
-	(let ((INIT (append (list T) (list NIL))))
-		(cond
-			((equal n 0) NIL)
-			(t
-				(append
-					(list(append (list n) (list INIT)))
-					(CREATE-DOMAINS (- n 1))
-				)
-			)
-		)
-	)
-)
-
-; GET-DOMAIN
-; After we assign a variable, we need to check to see if it affects domains of other vars.
-; Input: current domains
-; Output: 
-;	If updated domain is valid		 -> updated domain
-;	Else if updated domain invalid   -> NIL, representing that we can't enforce this 
-;											variable assignment
-
-
-; Choose a variable to assign:
-;		-If unary characters exist AND domain = 2, assign this
-;		-Else assign character that occurs most often (in clauses)
-;			-If all characters occur same amount, choose first one -> assign T
-; After assignment, updated the affected domains of other vars.
-; Check to see if any domains are NIL -> return NIL
-; If not:
-;		-Choose first var w/ domain with size 2 (T, F) (means it hasn't been assigned yet)
-
-(defun solve (CUR_DOMAIN CNF)
-	(let ((unary (GET-ASSIGNABLE-UNARY (FIND-UNARY CNF) CUR_DOMAIN))
-   	 	  (reversed_dom (reverse CUR_DOMAIN))
-		 ) 
-		(cond
-			((CHECK-FOR-EMPTY CUR_DOMAIN) NIL) 	;If any domain is NIL, no solution on path
-			((null CUR_DOMAIN) NIL)				;No answer
-
-			;Check to see if all variables have domain = 1
-			((equal (NUM-FULL-DOMAINS CUR_DOMAIN) 0)
-				;If so, we are ready to test to see if our assignments satsify the CNF
-				(cond
-					((EVAL-CNF
-						CNF
-						(DOM-TO-ASSN (reverse CUR_DOMAIN)) 
-					) 
-						;We return the assignment
-						(DOM-TO-ASSN (reverse CUR_DOMAIN))
-					)
-
-					;The assignment failed, return NIL and backtrack
-					(T
-						NIL
-					)
-				)
-			)
-
-
-			;If we have a unary character AND domain = 2, assign the first one	
-			((not (equal unary NIL))	;means that var unary is some value that we can set
-				;Set that value and get updated domains.
-				;Pass the updated single value to check across all other domains 
-				;in case a constraint needs to be forced
-
-				(solve
-					(UPDATE-RELATED-DOMAINS 
-						;Returns an updated domain for the unary var
-						(UPDATE-SINGLE-DOMAIN unary CUR_DOMAIN)
-
-						CNF
-					)
-					CNF
-				)
-
-			)
-
-			;Otherwise, we find the next var with domain size = 2 and choose T
-			;GET-VAR-DOM2 lets us find the next var with domain size 2
-			(t
-				(SOLVE-BRANCH CUR_DOMAIN)
-
-			)
-		)
-	)
-)
-
-; SOLVE-BRANCH
-; We encounter the case where we need to check T, and then check F otherwise
-(defun SOLVE-BRANCH (CUR_DOMAIN CNF)
-	(let ((T_sol 
-			(solve
-				(UPDATE-RELATED-DOMAINS
-					(UPDATE-SINGLE-DOMAIN (GET-VAR-DOM2 CUR_DOMAIN) CUR_DOMAIN)
-					CNF
-				)
-				CNF
-			)
-		  )
-		  (F_sol 
-			(solve
-				(UPDATE-RELATED-DOMAINS
-					(UPDATE-SINGLE-DOMAIN (- (GET-VAR-DOM2 CUR_DOMAIN)) CUR_DOMAIN)
-					CNF
-				)
-				CNF
-			)
-		  )
-		)
-	(cond
-		;Valid solution for T
-		((not(equal T_sol NIL))
-			T_sol
-		)
-
-		;Valid solution for F
-		((not(equal F_sol NIL))
-			F_sol
-		)
-
-		;Nothing. Give up and go home.
-		(T
-			NIL
-		)
-	)
-
-	)
-)
-
-; UPDATE-RELATED-DOMAINS
-; If we change a variable and it forces a constraint on other variables, we have to check
-; those domains and update them accordingly.
-;
-; A constraint will be imposed on a clause by 1 variable to others if by changing it,
-; a condition is imposed on another variable in a clause. This occurs if there is only
-; one free variable left to change.
-; 
-; Therefore, in each clause, we check:
-;	-If there is more than 1 variable
-;		-If so, we check to see # of variables with domain of size 2
-;			-1 variable means we need to fit a constraint and check the CNF
-;			- >1 variable means we leave those variables be
-
-(defun UPDATE-RELATED-DOMAINS (updated_domains CNF)
-	(cond
-		((null CNF) updated_domains)
-
-		;Check clause to see if there is more than 1 var
-		((> (length (first CNF)) 1)
-
-			;Check to see # variables w/ domain of size 2
-			(cond
-				((equal (NUM-FULL-DOMAINS updated_domains) 1)
-					;We need to figure out how to make this clause true
-					;GET-VAR-DOM2 gets the domain with size 2
-					(cond
-						;Try with var = T
-						((EVAL-CNF CNF
-							(DOM-TO-ASSN
-								(reverse(UPDATE-SINGLE-DOMAIN 
-									(GET-VAR-DOM2 updated_domains) updated_domains)
-								)
-							)
-						) 
-							;Return the updated domain
-							(UPDATE-SINGLE-DOMAIN 
-									(GET-VAR-DOM2 updated_domains) updated_domains)
-								
-							
-						)
-
-						;Try with var = NIL
-						((EVAL-CNF CNF
-							(DOM-TO-ASSN
-								(reverse(UPDATE-SINGLE-DOMAIN 
-									(- (GET-VAR-DOM2 updated_domains)) updated_domains)
-								)
-							)
-						) 
-							;Return the updated domain
-							(UPDATE-SINGLE-DOMAIN 
-									(- (GET-VAR-DOM2 updated_domains)) updated_domains)
-								
-							
-						)
-
-						;Neither of these work, so this is UNSAT
-						(t
-							NIL
-						)
-
-					)
-				)
-				((> (NUM-FULL-DOMAINS updated_domains) 1)
-					(UPDATE-RELATED-DOMAINS updated_domains (rest CNF))
-				)
-			)
-		)
-
-		;If there is not more than 1 var, we move on to the rest of the CNF
-		(t
-			(UPDATE-RELATED-DOMAINS updated_domains (rest CNF))
-		)
-	)
-
-)
-
-; UPDATE-SINGLE-DOMAIN
-; Updates a single variable's domain and returns that set of domains.
-; Input: Var to update, current domain set DOMAINS
-; Output: updated state of domains
-(defun UPDATE-SINGLE-DOMAIN (var DOMAINS)
-	(cond
-		((null DOMAINS) DOMAINS)
-		((equal (abs var) (first(first DOMAINS)))
-			(cond
-				;If the variable is negative, we set it to false and make its domain false
-				((< var 0)
-					(append (list(append (list(abs var)) (list(list NIL))))
-							(UPDATE-SINGLE-DOMAIN var (rest DOMAINS)))
-				)
-				;If the variable is positive, then to make it true we set it to be true
-				((> var 0)
-					(append (list(append (list(abs var)) (list(list T))))
-							(UPDATE-SINGLE-DOMAIN var (rest DOMAINS)))
-				)
-			)
-		)
-		(t
-			(append (list(first DOMAINS)) (UPDATE-SINGLE-DOMAIN var (rest DOMAINS)))
-		)
-	)
-)
-
-
-
-; GET-ASSIGNABLE-UNARY
-; Finds the first unary with a non-empty domain
-(defun GET-ASSIGNABLE-UNARY (UNARY_LIST DOMAINS)
-	(cond
-		((null UNARY_LIST) NIL)
-		((IS-ASSIGNABLE  (abs(first UNARY_LIST)) DOMAINS)  
-			(first UNARY_LIST)
-		)
-
-		(T
-			(GET-ASSIGNABLE-UNARY (rest UNARY_LIST) DOMAINS)
-		)
-	)
-)
-
-; NUM-FULL-DOMAINS
-; Gets the number of domains with size 2
-(defun NUM-FULL-DOMAINS (DOMAINS)
-	(let ((first_dom (second(first DOMAINS))))
-		(cond 
-			((null DOMAINS) 0)
-			((equal (length first_dom) 2)
-				(+ 1 (NUM-FULL-DOMAINS (rest DOMAINS)))
-			)
-			(t
-				(NUM-FULL-DOMAINS (rest DOMAINS))
-			)
-		)
-	)
-)
-
-; GET-VAR-DOM2
-; Get first variable corresponding to domain of size 2 
-(defun GET-VAR-DOM2 (domains)
-	(cond
-		((null domains) NIL)
-		((equal (length (second(first domains))) 2) 
-			(first (first domains))
-		)
-		(t
-			(GET-VAR-DOM2 (rest domains))
-		)
-	)
-)
-
-; IS-ASSIGNABLE
-; Checks to see if a value (variable) corresponds to a domain that has 2 values
-(defun IS-ASSIGNABLE  (val DOMAINS)
-	(cond
-		((null DOMAINS) NIL)
-		((equal (first(first DOMAINS)) val)
-			(cond
-				;If the domains are empty
-				((< (length (second(first DOMAINS))) 2) NIL)
-
-
-				;If the domains are not empty, IS-NOT-EMTPY should return T
-				(T 
-					(equal (length (second(first DOMAINS))) 2)
-
-				)
-			)
-		)
-		(T
-			(IS-ASSIGNABLE  val (rest DOMAINS))
-		)
-	)
-)
-
-
-; Find unary variables in the CNF
-; Return absolute value
-(defun find-unary (CNF)
-	(cond
-		((null CNF) NIL)
-		(t
-			(cond
-				((is-unary (first CNF))
-					(append
-						;The absolute value of the variable
-						;(list (abs (car(first CNF))))
-						(first CNF)
-						(find-unary (rest CNF))
-					)
-				)
-
-				; The list has more than one variable in it, so we skip and keep checking 
-				; the rest of the CNF
-				(t
-					(find-unary (rest CNF))
-				)
-			)
-		)
-	)
-
-)
-
-; Check to see if a list only has 1 member
-(defun is-unary (L)
-	(cond
-		((null L ) NIL)
-		(t
-			(equal (length L) 1)
-		)
-	)
-)
-
-; CHECK-FOR-EMPTY
-; Checks a list of lists (the domain lists) for an empty list.
-; If empty list exists -> T
-; Else -> NIL
-(defun CHECK-FOR-EMPTY (DOMAINS)
-	(cond
-		((null DOMAINS) NIL)
-		((equal (length (second(first DOMAINS))) 0) T)
-		(t 
-			(CHECK-FOR-EMPTY (rest DOMAINS))
-		)
-	)
-)
-
-; SAT-SOLVER
-(defun sat? (n delta)
-	(solve (create-domains n) delta)
-)
+;--------------------------------------------------------------------------------------------
