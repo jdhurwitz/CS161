@@ -1,4 +1,8 @@
-;
+;Jonathan Hurwitz
+;804258351
+;CS161 HW6
+
+
 ; All functions you need to write are marked with 'EXERCISE' in their header comments.
 ; Same rules apply regarding Lisp functions you are allowed to use.
 ; In fact, you do not need a lot of Lisp functions to finish this assignment.
